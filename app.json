@@ -16,7 +16,12 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.teamcmcwebcode.bluetoothdemo"
+      "package": "com.teamcmcwebcode.bluetoothdemo",
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -52,15 +57,13 @@
         "origin": false
       },
       "eas": {
-        "projectId": "77577e9f-019f-4c83-8cfa-e8bdae50a538"
+        "projectId": "2ff73bf7-c6f6-4566-818d-011c34220134"
       }
     },
-    "owner": "team-cmcwebcode",
+    "owner": "enokkio",
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "updates": {
-      "url": "https://u.expo.dev/77577e9f-019f-4c83-8cfa-e8bdae50a538"
-    }
+    "updates": {}
   }
 }

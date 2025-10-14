@@ -7,12 +7,29 @@ import {
   TouchableOpacity,
 } from "react-native";
 
+interface ManufacturerData {
+  bytes: number[];
+  data: string;
+  CDVType: string;
+}
+interface Advertising {
+  manufacturerData?: { [key: string]: ManufacturerData };
+  serviceData?: Record<string, any>;
+  isConnectable?: boolean;
+  serviceUUIDs?: string[];
+  manufacturerRawData?: ManufacturerData;
+  rawData?: ManufacturerData;
+  txPowerLevel?: number;
+}
 interface Peripheral {
   name?: string;
   localName?: string;
   rssi: number;
   id: string;
+  isConnectable:string;
+  advertising:Advertising;
 }
+
 
 interface PeripheralListProps {
   peripherals: Peripheral[];
@@ -36,6 +53,9 @@ const PeripheralList: React.FC<PeripheralListProps> = ({
             </Text>
             <Text style={styles.info}>RSSI: {item.rssi} dBm</Text>
             <Text style={styles.info}>ID: {item.id}</Text>
+            <Text style={styles.info}> Connectable: {item.advertising?.isConnectable !== undefined 
+            ? item.advertising.isConnectable ? "Yes" : "No" 
+            : "Unknown"}</Text>
           </TouchableOpacity>
         )}
       />
