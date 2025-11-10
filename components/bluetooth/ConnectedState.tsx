@@ -1,6 +1,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import React from "react";
 import { PeripheralServices } from "@/types/bluetooth";
+import MapView from 'react-native-maps';
+import { PROVIDER_GOOGLE} from 'react-native-maps';
 
 interface ConnectedStateProps {
   bleService: PeripheralServices;
@@ -40,6 +42,10 @@ const ConnectedState: React.FunctionComponent<ConnectedStateProps> = ({bleServic
         >
           <Text style={styles.buttonText}>DISCONNECT</Text>
         </TouchableOpacity>
+              <MapView style={styles.map}
+                provider={PROVIDER_GOOGLE}
+              />
+
       </View>
     </>
   );
@@ -49,6 +55,13 @@ export default ConnectedState;
 
 
 const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    map: {
+      width: '100%',
+      height: '100%',
+    },
     actionButtons: {
       flexDirection: "row",
       marginTop: 16,

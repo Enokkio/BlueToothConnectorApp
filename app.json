@@ -12,6 +12,11 @@
       "supportsTablet": true
     },
     "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAK2iJG99HxeXig3m00nrKIg9a_4xwPjJY"
+        }
+      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -57,10 +62,10 @@
         "origin": false
       },
       "eas": {
-        "projectId": "2ff73bf7-c6f6-4566-818d-011c34220134"
+        "projectId": "9b739123-6d39-4771-866c-48e9541a9ebd"
       }
     },
-    "owner": "enokkio",
+    "owner": "anonymt",
     "runtimeVersion": {
       "policy": "appVersion"
     },
