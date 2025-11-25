@@ -142,15 +142,20 @@ const BluetoothDemoScreen: React.FC = () => {
           "peripheralData.characteristics======="
         );
         if (peripheralData.characteristics) {
-          const peripheralParameters = {
-            peripheralId: peripheral.id,
-            serviceId: DEVICE_SERVICE_UUID,
-            transfer: TRANSFER_CHARACTERISTIC_UUID,
-            receive: RECEIVE_CHARACTERISTIC_UUID,
-          };
-          setBleService(peripheralParameters);
-          setIsConnected(true);
-        }
+  const peripheralParameters: PeripheralServices = {
+    peripheralId: peripheral.id,
+    serviceId: DEVICE_SERVICE_UUID,
+    transfer: TRANSFER_CHARACTERISTIC_UUID,
+    receive: RECEIVE_CHARACTERISTIC_UUID,
+    characteristics: peripheralData.characteristics.map(c => ({
+      characteristic: c.characteristic,
+      service: c.service,
+      properties: c.properties,
+    })),
+  };
+  setBleService(peripheralParameters);
+  setIsConnected(true);
+}
         setPeripherals((map) => {
           let p = map.get(peripheral.id);
           if (p) {

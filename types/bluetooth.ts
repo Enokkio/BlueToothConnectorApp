@@ -3,6 +3,11 @@ export type PeripheralServices = {
     serviceId: string;
     transfer: string;
     receive: string;
+    characteristics?: Array<{
+    characteristic: string;
+    service: string;
+    properties: Record<string, string>;
+  }>;
 };
   
 export interface StrippedPeripheral {
