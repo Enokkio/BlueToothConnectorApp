@@ -6,7 +6,8 @@ import PeripheralList from "../PeripheralList";
 interface DisconnectedStateProps {
   peripherals: StrippedPeripheral[];
   isScanning: boolean;
-  onScanPress: () => void;
+  onScanPress: (duration: number) => void; // <- updated
+
   onConnect: (peripheral: StrippedPeripheral) => Promise<void>;
 }
 
@@ -23,31 +24,44 @@ const [minRSSIInput, setMinRSSIInput] = React.useState(""); // string from TextI
 // Convert to number for filter
 const minRSSI = minRSSIInput.trim() === "" ? -999 : -Number(minRSSIInput);
 
+const [scanDurationInput, setScanDurationInput] = React.useState(""); // string from TextInput
+const scanDuration = scanDurationInput.trim() === "" ? 5 : Number(scanDurationInput);
 
 console.log(localNameFilter)
   return (
     <>
-      <TouchableOpacity style={styles.scanButton} onPress={onScanPress}>
-        <Text style={styles.scanButtonText}>
-          {isScanning ? "Scanning..." : "Start Scan"}
-        </Text>
-      </TouchableOpacity>
+     <TouchableOpacity
+  style={styles.scanButton}
+  onPress={() => onScanPress(scanDuration)}
+>
+  <Text style={styles.scanButtonText}>
+    {isScanning ? "Scanning..." : "Start Scan"}
+  </Text>
+</TouchableOpacity>
+
         {/* Filters */}
       <View style={styles.filtersContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Filter by Local Name"
-          value={localNameFilter}
-          onChangeText={setLocalNameFilter}
-        />
-   <TextInput
-  style={styles.input}
-  placeholder="Minimum RSSI"
-  keyboardType="numeric"
-  value={minRSSIInput}
-  onChangeText={setMinRSSIInput} // just store the string
-/>
-      </View>
+  <TextInput
+    style={styles.input}
+    placeholder="Filter by Local Name"
+    value={localNameFilter}
+    onChangeText={setLocalNameFilter}
+  />
+  <TextInput
+    style={styles.input}
+    placeholder="Minimum RSSI"
+    keyboardType="numeric"
+    value={minRSSIInput}
+    onChangeText={setMinRSSIInput}
+  />
+  <TextInput
+    style={styles.input}
+    placeholder="Scan Duration (sec)"
+    keyboardType="numeric"
+    value={scanDurationInput}
+    onChangeText={setScanDurationInput}
+  />
+</View>
 
       {peripherals.length > 0 ? (
         <PeripheralList   localNameFilter={localNameFilter}

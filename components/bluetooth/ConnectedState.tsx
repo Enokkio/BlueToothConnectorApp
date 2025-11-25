@@ -42,9 +42,9 @@ const ConnectedState: React.FunctionComponent<ConnectedStateProps> = ({bleServic
         >
           <Text style={styles.buttonText}>DISCONNECT</Text>
         </TouchableOpacity>
-              <MapView style={styles.map}
+              {/* <MapView style={styles.map}
                 provider={PROVIDER_GOOGLE}
-              />
+              /> */}
 
       </View>
     </>

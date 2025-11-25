@@ -227,51 +227,39 @@ const BluetoothDemoScreen: React.FC = () => {
     }
   };
 
-  const startScan = async () => {
-    const state = await BleManager.checkState();
-
-    console.log(state);
-
-    if (state === "off") {
-      if (Platform.OS == "ios") {
-        Alert.alert(
-          "Enable Bluetooth",
-          "Please enable Bluetooth in Settings to continue.",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Open Settings",
-              onPress: () => {
-                Linking.openURL("App-Prefs:Bluetooth");
-              },
-            },
-          ]
-        );
-      } else {
-        enableBluetooth();
-      }
+const startScan = async (scanDuration: number = 5) => {
+  const state = await BleManager.checkState();
+  if (state === "off") {
+    if (Platform.OS === "ios") {
+      Alert.alert(
+        "Enable Bluetooth",
+        "Please enable Bluetooth in Settings to continue.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => Linking.openURL("App-Prefs:Bluetooth") },
+        ]
+      );
+    } else {
+      enableBluetooth();
     }
-    if (!isScanning) {
-      setPeripherals(new Map<Peripheral["id"], Peripheral>());
-      try {
-        console.debug("[startScan] starting scan...");
-        setIsScanning(true);
-        BleManager.scan(SERVICE_UUIDS, SECONDS_TO_SCAN_FOR, ALLOW_DUPLICATES, {
-          matchMode: BleScanMatchMode.Sticky,
-          scanMode: BleScanMode.LowLatency,
-          callbackType: BleScanCallbackType.AllMatches,
-        })
-          .then(() => {
-            console.debug("[startScan] scan promise returned successfully.");
-          })
-          .catch((err: any) => {
-            console.error("[startScan] ble scan returned in error", err);
-          });
-      } catch (error) {
-        console.error("[startScan] ble scan error thrown", error);
-      }
+  }
+
+  if (!isScanning) {
+    setPeripherals(new Map<Peripheral["id"], Peripheral>());
+    try {
+      setIsScanning(true);
+      await BleManager.scan(SERVICE_UUIDS, scanDuration, ALLOW_DUPLICATES, {
+        matchMode: BleScanMatchMode.Sticky,
+        scanMode: BleScanMode.LowLatency,
+        callbackType: BleScanCallbackType.AllMatches,
+      });
+    } catch (error) {
+      console.error("[startScan] ble scan error thrown", error);
+      setIsScanning(false);
     }
-  };
+  }
+};
+
 
   const write = async () => {
     const MTU = 255;
@@ -305,7 +293,7 @@ const BluetoothDemoScreen: React.FC = () => {
         <DisconnectedState
           peripherals={Array.from(peripherals.values())}
           isScanning={isScanning}
-          onScanPress={startScan}
+      onScanPress={(duration) => startScan(duration)} // use duration from state
           onConnect={connectPeripheral}
         />
       ) : (
