@@ -34,16 +34,41 @@ interface Peripheral {
 interface PeripheralListProps {
   peripherals: Peripheral[];
   onConnect: (peripheral: Peripheral) => Promise<void>;
+  minRSSI: number,
+  localNameFilter: string,
 }
 
 const PeripheralList: React.FC<PeripheralListProps> = ({
   peripherals,
   onConnect,
+  minRSSI,
+  localNameFilter,
 }) => {
+
+const filteredPeripherals = peripherals.filter((p) => {
+  const matchesRSSI = p.rssi >= minRSSI;
+
+  const matchesName =
+    localNameFilter.trim() === "" ||
+    [p.name, p.localName]
+      .filter(Boolean) // remove undefined/null
+      .some((n) =>
+        n!.toLowerCase().includes(localNameFilter.toLowerCase())
+      );
+
+  return matchesRSSI && matchesName;
+});
+
+
+
+
   return (
     <View style={styles.container}>
       <FlatList
-        data={peripherals}
+         data={filteredPeripherals
+    .filter(p => /* optional other filters, e.g., name */ true)
+    .sort((a, b) => b.rssi - a.rssi) // sort descending by RSSI (largest first)
+  }
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => onConnect(item)} style={styles.card}>

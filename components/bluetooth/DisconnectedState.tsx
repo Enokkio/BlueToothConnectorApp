@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, TouchableOpacity,View , TextInput} from "react-native";
 import React from "react";
 import { StrippedPeripheral } from "@/types/bluetooth";
 import PeripheralList from "../PeripheralList";
@@ -16,6 +16,15 @@ const DisconnectedState: React.FunctionComponent<DisconnectedStateProps> = ({
   peripherals,
   onConnect,
 }) => {
+
+const [localNameFilter, setLocalNameFilter] = React.useState("");
+const [minRSSIInput, setMinRSSIInput] = React.useState(""); // string from TextInput
+
+// Convert to number for filter
+const minRSSI = minRSSIInput.trim() === "" ? -999 : -Number(minRSSIInput);
+
+
+console.log(localNameFilter)
   return (
     <>
       <TouchableOpacity style={styles.scanButton} onPress={onScanPress}>
@@ -23,9 +32,26 @@ const DisconnectedState: React.FunctionComponent<DisconnectedStateProps> = ({
           {isScanning ? "Scanning..." : "Start Scan"}
         </Text>
       </TouchableOpacity>
+        {/* Filters */}
+      <View style={styles.filtersContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Filter by Local Name"
+          value={localNameFilter}
+          onChangeText={setLocalNameFilter}
+        />
+   <TextInput
+  style={styles.input}
+  placeholder="Minimum RSSI"
+  keyboardType="numeric"
+  value={minRSSIInput}
+  onChangeText={setMinRSSIInput} // just store the string
+/>
+      </View>
 
       {peripherals.length > 0 ? (
-        <PeripheralList onConnect={onConnect} peripherals={peripherals} />
+        <PeripheralList   localNameFilter={localNameFilter}
+  minRSSI={minRSSI} onConnect={onConnect} peripherals={peripherals} />
       ) : (
         <Text style={styles.emptyText}>No peripherals found</Text>
       )}
@@ -52,5 +78,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginTop: 20,
+  },
+  filtersContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 8,
   },
 });
