@@ -293,7 +293,7 @@ const startScan = async (scanDuration: number = 5) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Bluetooth Demo</Text>
+      <Text style={styles.header}>Bluetooth RSSI measure and connection</Text>
       {!isConnected ? (
         <DisconnectedState
           peripherals={Array.from(peripherals.values())}
