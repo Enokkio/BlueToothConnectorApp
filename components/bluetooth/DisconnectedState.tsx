@@ -19,20 +19,34 @@ const DisconnectedState: React.FunctionComponent<DisconnectedStateProps> = ({
 }) => {
 
 const [localNameFilter, setLocalNameFilter] = React.useState("");
+const [localTrackerID, setLocalTrackerID] = React.useState("E4:17:D8:88:30:C1");
 const [minRSSIInput, setMinRSSIInput] = React.useState(""); // string from TextInput
-
+const [RSSITrackValues, setRSSITrackValues] = React.useState<number[]>([]);
 // Convert to number for filter
 const minRSSI = minRSSIInput.trim() === "" ? -999 : -Number(minRSSIInput);
 
 const [scanDurationInput, setScanDurationInput] = React.useState(""); // string from TextInput
 const scanDuration = scanDurationInput.trim() === "" ? 5 : Number(scanDurationInput);
 
-console.log(localNameFilter)
+React.useEffect(() => {
+  if (!localTrackerID) return;
+
+  const match = peripherals.find((p) => p.id === localTrackerID);
+
+  if (match) {
+    setRSSITrackValues((prev) => [...prev, match.rssi]);
+    console.log(RSSITrackValues)
+  }
+}, [peripherals, localTrackerID]);
+
   return (
     <>
      <TouchableOpacity
   style={styles.scanButton}
-  onPress={() => onScanPress(scanDuration)}
+  onPress={() => {
+  setRSSITrackValues([]);        // reset array
+  onScanPress(scanDuration);     // start scan
+}}
 >
   <Text style={styles.scanButtonText}>
     {isScanning ? "Scanning..." : "Start Scan"}
@@ -60,6 +74,13 @@ console.log(localNameFilter)
     keyboardType="numeric"
     value={scanDurationInput}
     onChangeText={setScanDurationInput}
+  />
+    <TextInput
+    style={styles.input}
+    placeholder="Tracker ID"
+    keyboardType="numeric"
+    value={localTrackerID}
+    onChangeText={setLocalTrackerID}
   />
 </View>
 
