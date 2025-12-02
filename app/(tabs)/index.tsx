@@ -2,7 +2,7 @@ import ConnectedState from "@/components/bluetooth/ConnectedState";
 import DisconnectedState from "@/components/bluetooth/DisconnectedState";
 import { PeripheralServices } from "@/types/bluetooth";
 import { handleAndroidPermissions } from "@/utils/permission";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { View, Text, StyleSheet, Platform, Alert, Linking } from "react-native";
 import BleManager, {
   BleDisconnectPeripheralEvent,
@@ -17,6 +17,7 @@ declare module "react-native-ble-manager" {
   interface Peripheral {
     connected?: boolean;
     connecting?: boolean;
+    lastSeen?: number; // timestamp for last discovery
   }
 }
 
@@ -37,12 +38,14 @@ const BluetoothDemoScreen: React.FC = () => {
   const [bleService, setBleService] = useState<PeripheralServices | undefined>(
     undefined
   );
+  const [RSSITrackValues, setRSSITrackValues] = useState<number[]>([]);
+  const localTrackerID = useRef<string>("E4:17:D8:88:30:C1"); // replace with your tracker ID
 
   useEffect(() => {
     BleManager.start({ showAlert: false })
       .then(() => console.debug("BleManager started."))
       .catch((error: any) =>
-        console.error("BeManager could not be started.", error)
+        console.error("BleManager could not be started.", error)
       );
 
     const listeners: any[] = [
@@ -64,20 +67,24 @@ const BluetoothDemoScreen: React.FC = () => {
     };
   }, []);
 
-  const handleDisconnectedPeripheral = (
-    event: BleDisconnectPeripheralEvent
-  ) => {
-    console.debug(
-      `[handleDisconnectedPeripheral][${event.peripheral}] disconnected.`
-    );
-    setPeripherals((map) => {
-      let p = map.get(event.peripheral);
-      if (p) {
-        p.connected = false;
-        return new Map(map.set(event.peripheral, p));
-      }
-      return map;
-    });
+  const handleDiscoverPeripheral = (peripheral: Peripheral) => {
+    if (!peripheral.name) peripheral.name = "NO NAME";
+
+    // Mark last seen timestamp
+    peripheral.lastSeen = Date.now();
+
+    setPeripherals((map) => new Map(map.set(peripheral.id, peripheral)));
+
+    // Append RSSI only if this is the device we want to track
+    if (peripheral.id === localTrackerID.current) {
+      setRSSITrackValues((prev) => [...prev, peripheral.rssi]);
+      console.log("RSSI values:", [...RSSITrackValues, peripheral.rssi]);
+    }
+  };
+
+  const handleStopScan = () => {
+    setIsScanning(false);
+    console.debug("[handleStopScan] scan is stopped.");
   };
 
   const handleConnectPeripheral = (event: any) => {
@@ -92,116 +99,75 @@ const BluetoothDemoScreen: React.FC = () => {
     );
   };
 
-  const handleStopScan = () => {
-    setIsScanning(false);
-    console.debug("[handleStopScan] scan is stopped.");
-  };
-
-  const handleDiscoverPeripheral = (peripheral: Peripheral) => {
-    console.debug("[handleDiscoverPeripheral] new BLE peripheral=", peripheral);
-    if (!peripheral.name) {
-      peripheral.name = "NO NAME";
-    }
+  const handleDisconnectedPeripheral = (event: BleDisconnectPeripheralEvent) => {
+    console.debug(`[handleDisconnectedPeripheral][${event.peripheral}] disconnected.`);
     setPeripherals((map) => {
-      return new Map(map.set(peripheral.id, peripheral));
-    });
-  };
-
-  const connectPeripheral = async (
-    peripheral: Omit<Peripheral, "advertising">
-  ) => {
-    try {
-      if (peripheral) {
-        setPeripherals((map) => {
-          let p = map.get(peripheral.id);
-          if (p) {
-            p.connecting = true;
-            return new Map(map.set(p.id, p));
-          }
-          return map;
-        });
-
-        await BleManager.connect(peripheral.id);
-        console.debug(`[connectPeripheral][${peripheral.id}] connected.`);
-        setPeripherals((map) => {
-          let p = map.get(peripheral.id);
-          if (p) {
-            p.connecting = false;
-            p.connected = true;
-            return new Map(map.set(p.id, p));
-          }
-          return map;
-        });
-
-        // before retrieving services, it is often a good idea to let bonding & connection finish properly
-        await sleep(900);
-        /* Test read current RSSI value, retrieve services first */
-        const peripheralData = await BleManager.retrieveServices(peripheral.id);
-        console.log(
-          peripheralData.characteristics,
-          "peripheralData.characteristics======="
-        );
-        if (peripheralData.characteristics) {
-  const peripheralParameters: PeripheralServices = {
-    peripheralId: peripheral.id,
-    serviceId: DEVICE_SERVICE_UUID,
-    transfer: TRANSFER_CHARACTERISTIC_UUID,
-    receive: RECEIVE_CHARACTERISTIC_UUID,
-    characteristics: peripheralData.characteristics.map(c => ({
-      characteristic: c.characteristic,
-      service: c.service,
-      properties: c.properties,
-    })),
-  };
-  setBleService(peripheralParameters);
-  setIsConnected(true);
-}
-        setPeripherals((map) => {
-          let p = map.get(peripheral.id);
-          if (p) {
-            return new Map(map.set(p.id, p));
-          }
-          return map;
-        });
-        const rssi = await BleManager.readRSSI(peripheral.id);
-        if (peripheralData.characteristics) {
-          for (const characteristic of peripheralData.characteristics) {
-            if (characteristic.descriptors) {
-              for (const descriptor of characteristic.descriptors) {
-                try {
-                  let data = await BleManager.readDescriptor(
-                    peripheral.id,
-                    characteristic.service,
-                    characteristic.characteristic,
-                    descriptor.uuid
-                  );
-                  console.log(
-                    `[readDescriptor] Descriptor ${data} for ${peripheral.id} `
-                  );
-                } catch (error) {
-                  console.error(
-                    `[connectPeripheral][${peripheral.id}] failed to retrieve descriptor ${descriptor.value} for characteristic ${characteristic.characteristic}:`,
-                    error
-                  );
-                }
-              }
-            }
-          }
-        }
-        setPeripherals((map) => {
-          let p = map.get(peripheral.id);
-          if (p) {
-            p.rssi = rssi;
-            return new Map(map.set(p.id, p));
-          }
-          return map;
-        });
+      const p = map.get(event.peripheral);
+      if (p) {
+        p.connected = false;
+        return new Map(map.set(event.peripheral, p));
       }
+      return map;
+    });
+    setIsConnected(false);
+    setBleService(undefined);
+  };
+
+  const connectPeripheral = async (peripheral: Omit<Peripheral, "advertising">) => {
+    try {
+      setPeripherals((map) => {
+        const p = map.get(peripheral.id);
+        if (p) {
+          p.connecting = true;
+          return new Map(map.set(p.id, p));
+        }
+        return map;
+      });
+
+      await BleManager.connect(peripheral.id);
+
+      setPeripherals((map) => {
+        const p = map.get(peripheral.id);
+        if (p) {
+          p.connecting = false;
+          p.connected = true;
+          return new Map(map.set(p.id, p));
+        }
+        return map;
+      });
+
+      // Wait a moment before retrieving services
+      await new Promise((r) => setTimeout(r, 900));
+
+      const peripheralData = await BleManager.retrieveServices(peripheral.id);
+      if (peripheralData.characteristics) {
+        const peripheralParameters: PeripheralServices = {
+          peripheralId: peripheral.id,
+          serviceId: DEVICE_SERVICE_UUID,
+          transfer: TRANSFER_CHARACTERISTIC_UUID,
+          receive: RECEIVE_CHARACTERISTIC_UUID,
+          characteristics: peripheralData.characteristics.map((c) => ({
+            characteristic: c.characteristic,
+            service: c.service,
+            properties: c.properties,
+          })),
+        };
+        setBleService(peripheralParameters);
+        setIsConnected(true);
+      }
+
+      // Read initial RSSI
+      const rssi = await BleManager.readRSSI(peripheral.id);
+      setPeripherals((map) => {
+        const p = map.get(peripheral.id);
+        if (p) {
+          p.rssi = rssi;
+          return new Map(map.set(p.id, p));
+        }
+        return map;
+      });
     } catch (error) {
-      console.error(
-        `[connectPeripheral][${peripheral.id}] connectPeripheral error`,
-        error
-      );
+      console.error(`[connectPeripheral][${peripheral.id}] error:`, error);
     }
   };
 
@@ -212,59 +178,51 @@ const BluetoothDemoScreen: React.FC = () => {
       setPeripherals(new Map());
       setIsConnected(false);
     } catch (error) {
-      console.error(
-        `[disconnectPeripheral][${peripheralId}] disconnectPeripheral error`,
-        error
-      );
+      console.error(`[disconnectPeripheral][${peripheralId}] error:`, error);
     }
   };
-
-  function sleep(ms: number) {
-    return new Promise<void>((resolve) => setTimeout(resolve, ms));
-  }
 
   const enableBluetooth = async () => {
     try {
-      console.debug("[enableBluetooth]");
       await BleManager.enableBluetooth();
     } catch (error) {
-      console.error("[enableBluetooth] thrown", error);
+      console.error("[enableBluetooth] error", error);
     }
   };
 
-const startScan = async (scanDuration: number = 5) => {
-  const state = await BleManager.checkState();
-  if (state === "off") {
-    if (Platform.OS === "ios") {
-      Alert.alert(
-        "Enable Bluetooth",
-        "Please enable Bluetooth in Settings to continue.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Open Settings", onPress: () => Linking.openURL("App-Prefs:Bluetooth") },
-        ]
-      );
-    } else {
-      enableBluetooth();
+  const startScan = async (scanDuration: number = 5) => {
+    const state = await BleManager.checkState();
+    if (state === "off") {
+      if (Platform.OS === "ios") {
+        Alert.alert(
+          "Enable Bluetooth",
+          "Please enable Bluetooth in Settings to continue.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open Settings", onPress: () => Linking.openURL("App-Prefs:Bluetooth") },
+          ]
+        );
+      } else {
+        enableBluetooth();
+      }
     }
-  }
 
-  if (!isScanning) {
-    setPeripherals(new Map<Peripheral["id"], Peripheral>());
-    try {
-      setIsScanning(true);
-      await BleManager.scan(SERVICE_UUIDS, scanDuration, ALLOW_DUPLICATES, {
-        matchMode: BleScanMatchMode.Sticky,
-        scanMode: BleScanMode.LowLatency,
-        callbackType: BleScanCallbackType.AllMatches,
-      });
-    } catch (error) {
-      console.error("[startScan] ble scan error thrown", error);
-      setIsScanning(false);
+    if (!isScanning) {
+      setPeripherals(new Map());
+      setRSSITrackValues([]);
+      try {
+        setIsScanning(true);
+        await BleManager.scan(SERVICE_UUIDS, scanDuration, ALLOW_DUPLICATES, {
+          matchMode: BleScanMatchMode.Sticky,
+          scanMode: BleScanMode.LowLatency,
+          callbackType: BleScanCallbackType.AllMatches,
+        });
+      } catch (error) {
+        console.error("[startScan] ble scan error", error);
+        setIsScanning(false);
+      }
     }
-  }
-};
-
+  };
 
   const write = async () => {
     const MTU = 255;
@@ -297,9 +255,11 @@ const startScan = async (scanDuration: number = 5) => {
       {!isConnected ? (
         <DisconnectedState
           peripherals={Array.from(peripherals.values())}
+          RSSITrackValues={RSSITrackValues}
           isScanning={isScanning}
-      onScanPress={(duration) => startScan(duration)} // use duration from state
+          onScanPress={startScan}
           onConnect={connectPeripheral}
+          localTrackerID={localTrackerID.current}
         />
       ) : (
         bleService && (

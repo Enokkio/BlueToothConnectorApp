@@ -1,56 +1,34 @@
+import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View, TextInput, Platform, PermissionsAndroid } from "react-native";
-import React from "react";
 import RNFS from "react-native-fs";
 import { StrippedPeripheral } from "@/types/bluetooth";
 import PeripheralList from "../PeripheralList";
 
 interface DisconnectedStateProps {
   peripherals: StrippedPeripheral[];
+  RSSITrackValues: number[];
   isScanning: boolean;
-  onScanPress: (duration: number) => void;
+  onScanPress: (duration?: number) => void;
   onConnect: (peripheral: StrippedPeripheral) => Promise<void>;
+  localTrackerID: string;
 }
 
-const DisconnectedState: React.FunctionComponent<DisconnectedStateProps> = ({
+const DisconnectedState: React.FC<DisconnectedStateProps> = ({
+  peripherals,
+  RSSITrackValues,
   isScanning,
   onScanPress,
-  peripherals,
   onConnect,
+  localTrackerID,
 }) => {
-  const [localNameFilter, setLocalNameFilter] = React.useState("");
-  const [localTrackerID, setLocalTrackerID] = React.useState("E4:17:D8:88:30:C1");
-  const [minRSSIInput, setMinRSSIInput] = React.useState("");
-  const [RSSITrackValues, setRSSITrackValues] = React.useState<number[]>([]);
-  const [scanDurationInput, setScanDurationInput] = React.useState("10");
-  const [fileName, setFileName] = React.useState("rssi_values"); // default file name
+  const [fileName, setFileName] = useState("rssi_values");
+  const [localNameFilter, setLocalNameFilter] = useState("");
+  const [minRSSIInput, setMinRSSIInput] = useState("");
+  const [scanDurationInput, setScanDurationInput] = useState("10");
 
-  const minRSSI = minRSSIInput.trim() === "" ? -999 : -Number(minRSSIInput);
+  const minRSSI = minRSSIInput.trim() === "" ? -999 : Number(minRSSIInput);
   const scanDuration = scanDurationInput.trim() === "" ? 10 : Number(scanDurationInput);
 
-  // Track RSSI values for selected tracker
-  React.useEffect(() => {
-    if (!localTrackerID) return;
-
-    const match = peripherals.find((p) => p.id === localTrackerID);
-    if (match) {
-      setRSSITrackValues((prev) => [...prev, match.rssi]);
-      console.log("RSSI values:", [...RSSITrackValues, match.rssi]);
-    }
-  }, [peripherals, localTrackerID]);
-
-  // Helper function for readable timestamp
-  const getReadableTimestamp = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-    const seconds = String(now.getSeconds()).padStart(2, "0");
-    return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
-  };
-
-  // Export RSSI to Downloads (Android) or Documents (iOS) with readable timestamp
   const exportRSSIToFile = async () => {
     if (RSSITrackValues.length === 0) {
       alert("No RSSI data to export!");
@@ -63,7 +41,7 @@ const DisconnectedState: React.FunctionComponent<DisconnectedStateProps> = ({
     }
 
     try {
-      const timestamp = getReadableTimestamp();
+      const timestamp = new Date().toISOString().replace(/:/g, "-");
       const finalFileName = `${fileName.trim()}_${timestamp}.txt`;
 
       let filePath = "";
@@ -92,8 +70,6 @@ const DisconnectedState: React.FunctionComponent<DisconnectedStateProps> = ({
       const data = RSSITrackValues.join("\n");
       await RNFS.writeFile(filePath, data, "utf8");
       alert(`RSSI values saved to: ${filePath}`);
-      console.log("File saved at:", filePath);
-
     } catch (error) {
       console.error("Error saving file:", error);
       alert("Failed to save RSSI values");
@@ -102,19 +78,15 @@ const DisconnectedState: React.FunctionComponent<DisconnectedStateProps> = ({
 
   return (
     <>
+      {/* Scan Button */}
       <TouchableOpacity
-        style={styles.scanButton}
-        onPress={() => {
-          setRSSITrackValues([]); // reset array
-          onScanPress(scanDuration); // start scan
-        }}
+        style={[styles.scanButton, { backgroundColor: isScanning ? "red" : "#007AFF" }]}
+        onPress={() => onScanPress(scanDuration)}
       >
-        <Text style={styles.scanButtonText}>
-          {isScanning ? "Scanning..." : "Start Scan"}
-        </Text>
+        <Text style={styles.scanButtonText}>{isScanning ? "Scanning..." : "Start Scan"}</Text>
       </TouchableOpacity>
 
-      {/* Custom file name input */}
+      {/* File Name Input */}
       <TextInput
         style={[styles.input2, { marginBottom: 8 }]}
         placeholder="Enter file name"
@@ -155,10 +127,11 @@ const DisconnectedState: React.FunctionComponent<DisconnectedStateProps> = ({
           style={styles.input}
           placeholder="Tracker ID"
           value={localTrackerID}
-          onChangeText={setLocalTrackerID}
+          editable={false} // optional: you may make it editable if needed
         />
       </View>
 
+      {/* Peripheral List */}
       {peripherals.length > 0 ? (
         <PeripheralList
           localNameFilter={localNameFilter}
@@ -169,6 +142,12 @@ const DisconnectedState: React.FunctionComponent<DisconnectedStateProps> = ({
       ) : (
         <Text style={styles.emptyText}>No peripherals found</Text>
       )}
+
+      {/* RSSI Values
+      <View style={{ marginTop: 16 }}>
+        <Text>RSSI Track Values (duplicates allowed):</Text>
+        <Text>{RSSITrackValues.join(", ")}</Text>
+      </View> */}
     </>
   );
 };
@@ -177,7 +156,6 @@ export default DisconnectedState;
 
 const styles = StyleSheet.create({
   scanButton: {
-    backgroundColor: "#007AFF",
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
@@ -187,11 +165,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     fontWeight: "500",
-  },
-  emptyText: {
-    fontSize: 16,
-    color: "#666",
-    marginTop: 20,
   },
   filtersContainer: {
     flexDirection: "row",
@@ -212,5 +185,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 20,
   },
 });

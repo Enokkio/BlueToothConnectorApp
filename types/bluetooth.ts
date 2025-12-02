@@ -15,4 +15,11 @@ export interface StrippedPeripheral {
     localName?: string;
     rssi: number;
     id: string;
+    advertising?: {
+    isConnectable?: boolean;
+    serviceUUIDs?: string[];
+    manufacturerData?: string;
+    txPowerLevel?: number;
+  };
+    
 }
