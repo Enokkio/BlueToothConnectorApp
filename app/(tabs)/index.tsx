@@ -39,7 +39,8 @@ const BluetoothDemoScreen: React.FC = () => {
     undefined
   );
   const [RSSITrackValues, setRSSITrackValues] = useState<number[]>([]);
-  const localTrackerID = useRef<string>("E4:17:D8:88:30:C1"); // replace with your tracker ID
+  // const localTrackerID = useRef<string>("E4:17:D8:88:30:C1"); // replace with your tracker ID
+  const [localTrackerID, setlocalTrackerID] = useState<string>("E4:17:D8:88:30:C1");
 
   useEffect(() => {
     BleManager.start({ showAlert: false })
@@ -76,7 +77,7 @@ const BluetoothDemoScreen: React.FC = () => {
     setPeripherals((map) => new Map(map.set(peripheral.id, peripheral)));
 
     // Append RSSI only if this is the device we want to track
-    if (peripheral.id === localTrackerID.current) {
+    if (peripheral.id === localTrackerID) {
       setRSSITrackValues((prev) => [...prev, peripheral.rssi]);
       console.log("RSSI values:", [...RSSITrackValues, peripheral.rssi]);
     }
@@ -259,7 +260,8 @@ const BluetoothDemoScreen: React.FC = () => {
           isScanning={isScanning}
           onScanPress={startScan}
           onConnect={connectPeripheral}
-          localTrackerID={localTrackerID.current}
+          localTrackerID={localTrackerID}
+          setlocalTrackerID={setlocalTrackerID}
         />
       ) : (
         bleService && (

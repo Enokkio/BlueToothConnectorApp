@@ -11,6 +11,7 @@ interface DisconnectedStateProps {
   onScanPress: (duration?: number) => void;
   onConnect: (peripheral: StrippedPeripheral) => Promise<void>;
   localTrackerID: string;
+  setlocalTrackerID: (id: string) => void;
 }
 
 const DisconnectedState: React.FC<DisconnectedStateProps> = ({
@@ -20,6 +21,7 @@ const DisconnectedState: React.FC<DisconnectedStateProps> = ({
   onScanPress,
   onConnect,
   localTrackerID,
+  setlocalTrackerID,
 }) => {
   const [fileName, setFileName] = useState("rssi_values");
   const [localNameFilter, setLocalNameFilter] = useState("");
@@ -127,7 +129,9 @@ const DisconnectedState: React.FC<DisconnectedStateProps> = ({
           style={styles.input}
           placeholder="Tracker ID"
           value={localTrackerID}
-          editable={false} // optional: you may make it editable if needed
+          onChangeText={setlocalTrackerID}
+
+          // editable={false} // optional: you may make it editable if needed
         />
       </View>
 
