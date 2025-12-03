@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View, TextInput, Platform, PermissionsAndroid } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  TextInput,
+  Platform,
+  PermissionsAndroid,
+  ScrollView,
+} from "react-native";
 import RNFS from "react-native-fs";
 import { StrippedPeripheral } from "@/types/bluetooth";
 import PeripheralList from "../PeripheralList";
@@ -85,7 +94,9 @@ const DisconnectedState: React.FC<DisconnectedStateProps> = ({
         style={[styles.scanButton, { backgroundColor: isScanning ? "red" : "#007AFF" }]}
         onPress={() => onScanPress(scanDuration)}
       >
-        <Text style={styles.scanButtonText}>{isScanning ? "Scanning..." : "Start Scan"}</Text>
+        <Text style={styles.scanButtonText}>
+          {isScanning ? "Scanning..." : "Start Scan"}
+        </Text>
       </TouchableOpacity>
 
       {/* File Name Input */}
@@ -130,8 +141,6 @@ const DisconnectedState: React.FC<DisconnectedStateProps> = ({
           placeholder="Tracker ID"
           value={localTrackerID}
           onChangeText={setlocalTrackerID}
-
-          // editable={false} // optional: you may make it editable if needed
         />
       </View>
 
@@ -147,11 +156,16 @@ const DisconnectedState: React.FC<DisconnectedStateProps> = ({
         <Text style={styles.emptyText}>No peripherals found</Text>
       )}
 
-      {/* RSSI Values
-      <View style={{ marginTop: 16 }}>
-        <Text>RSSI Track Values (duplicates allowed):</Text>
-        <Text>{RSSITrackValues.join(", ")}</Text>
-      </View> */}
+      {/* ✅ SCROLLING RSSI WINDOW */}
+      <View style={styles.rssiContainer}>
+        <Text style={styles.rssiTitle}>RSSI Track Values:</Text>
+
+        <ScrollView style={styles.rssiScroll} nestedScrollEnabled={true}>
+          <Text style={styles.rssiText}>
+            {RSSITrackValues.join(", ")}
+          </Text>
+        </ScrollView>
+      </View>
     </>
   );
 };
@@ -194,5 +208,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
     marginTop: 20,
+  },
+
+  rssiContainer: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 8,
+    backgroundColor: "#fafafa",
+  },
+  rssiTitle: {
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  rssiScroll: {
+    maxHeight: 60, // ✅ LIMIT HEIGHT HERE
+  },
+  rssiText: {
+    fontSize: 14,
+    color: "#333",
   },
 });
